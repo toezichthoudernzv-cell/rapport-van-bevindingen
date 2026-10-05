@@ -591,6 +591,8 @@ function renderPreview(){
         <p><b>Locatie</b> : ${esc(state.locatie)}</p>
       </div>
 
+      <p style="margin-top:14px;">Ik, ${esc(state.naam.trim() || '[naam]')}, handhaver, ambtenaar van het Waterschap Noorderzijlvest, toezichthouder als bedoeld in artikel 5:11 van de Algemene wet bestuursrecht en belast met toezicht op o.a. de Waterwet, verklaar het navolgende:</p>
+
       <div class="sec-title">Aanleiding</div>
       <p>${nl2br(state.aanleiding)}</p>
       ${aanwezigenHtml}
