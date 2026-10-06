@@ -74,6 +74,11 @@
   }
   textarea{resize:vertical;min-height:60px;}
   .row2{display:flex;gap:8px;}
+  .pick{display:flex;gap:6px;margin-top:4px;align-items:center;}
+  .pick input{width:auto;flex:1;min-width:0;}
+  .pick .sep{color:#6b7280;}
+  .mini{border:1px solid #c9ced6;background:#f4f6f8;border-radius:6px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap;}
+  .mini:hover{background:#e8ecf0;}
   .row2 > div{flex:1;}
   .list-item{
     display:flex;
@@ -209,28 +214,41 @@
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:14px;
+    align-items:start;
     margin:10px 0;
   }
-  .photo-box img{
-    width:100%;
-    height:200px;
-    object-fit:cover;
+  .photo-box{display:flex;flex-direction:column;}
+  .photo-frame{
+    height:62mm;
+    display:flex;
+    align-items:center;
+    justify-content:center;
     border:1px solid #ccc;
+    background:#f3f4f6;
+    overflow:hidden;
+  }
+  .photo-frame img{
+    display:block;
+    max-width:100%;
+    max-height:100%;
+    width:auto;
+    height:auto;
   }
   .photo-box .cap{
     text-align:center;
     font-style:italic;
     font-size:10pt;
     margin-top:4px;
+    min-height:2.6em;
+  }
+  /* een oneven aantal foto's: de laatste foto netjes gecentreerd op dezelfde breedte */
+  .photos-grid .photo-box:last-child:nth-child(odd){
+    grid-column:1 / -1;
+    justify-self:center;
+    width:calc(50% - 7px);
   }
   .situatie-box{margin:14px 0;}
-  .situatie-box img{
-    width:100%;
-    max-height:260px;
-    object-fit:contain;
-    border:1px solid #ccc;
-    display:block;
-  }
+  .situatie-box .photo-frame{height:80mm;}
   .situatie-box .cap{
     text-align:center;
     font-style:italic;
@@ -311,14 +329,18 @@
         <div>
           <label>Datum bezoek</label>
           <input type="text" id="datumBezoek" placeholder="bijv. 3 augustus 2026" value="3 augustus 2026">
+          <div class="pick"><input type="date" id="datumBezoekPick" aria-label="Kies datum"><button type="button" class="mini" id="datumBezoekVandaag">Vandaag</button></div>
         </div>
         <div>
           <label>Tijd bezoek</label>
-          <input type="text" id="tijdBezoek" placeholder="bijv. 14.00 - 15.00 uur" value="14.00 uur – 15.00 uur">
+          <input type="text" id="tijdBezoek" placeholder="bijv. 14.00 uur" value="14.00 uur">
+          <div class="pick"><input type="time" id="tijdVan" aria-label="Kies tijd"><button type="button" class="mini" id="tijdNu">Nu</button></div>
         </div>
       </div>
       <label>Locatie</label>
       <input type="text" id="locatie" placeholder="Straat en plaats">
+      <label>Wet- en regelgeving (&hellip;waaronder de &hellip;)</label>
+      <input type="text" id="wetgeving" value="" placeholder="bijv. Omgevingswet (leeg laten = weglaten)">
     </fieldset>
 
     <fieldset>
@@ -378,6 +400,7 @@
         <div>
           <label>Datum</label>
           <input type="text" id="datumOndertekening" value="3 augustus 2026">
+          <div class="pick"><input type="date" id="datumOndertekeningPick" aria-label="Kies datum"><button type="button" class="mini" id="datumOndertekeningVandaag">Vandaag</button></div>
         </div>
       </div>
       <label>Functie (onder handtekening)</label>
@@ -407,8 +430,9 @@ const state = {
   naam:'Remko Meijer',
   functie:'Toezichthouder/Handhaver Waterschap Noorderzijlvest',
   datumBezoek:'3 augustus 2026',
-  tijdBezoek:'14.00 uur – 15.00 uur',
+  tijdBezoek:'14.00 uur',
   locatie:'',
+  wetgeving:'',
   aanleiding:'Naar aanleiding van een ontvangen verzoek tot handhaving is op [datum] een controlebezoek afgelegd. Het verzoek tot handhaving heeft betrekking op [omschrijving].',
   aanwezigen:[{naam:'', org:''}],
   bevindingen:[''],
@@ -560,7 +584,7 @@ function renderPreview(){
     <div class="photos-grid">
       ${fotosWithImg.map(f=>`
         <div class="photo-box">
-          <img src="${f.dataUrl}">
+          <div class="photo-frame"><img src="${f.dataUrl}"></div>
           <div class="cap">${esc(f.caption||'')}</div>
         </div>
       `).join('')}
@@ -569,7 +593,7 @@ function renderPreview(){
 
   const situatieHtml = state.situatie ? `
     <div class="situatie-box">
-      <img src="${state.situatie}">
+      <div class="photo-frame"><img src="${state.situatie}"></div>
       <div class="cap">${esc(state.situatieCaption||'')}</div>
     </div>
   ` : '';
@@ -591,7 +615,7 @@ function renderPreview(){
         <p><b>Locatie</b> : ${esc(state.locatie)}</p>
       </div>
 
-      <p style="margin-top:14px;">Ik, ${esc(state.naam.trim() || '[naam]')}, handhaver, ambtenaar van het Waterschap Noorderzijlvest, toezichthouder als bedoeld in artikel 5:11 van de Algemene wet bestuursrecht en belast met toezicht op o.a. de Waterwet, verklaar het navolgende:</p>
+      <p style="margin-top:14px;">Ik, ${esc(state.naam.trim() || '[naam]')}, ambtenaar van het Waterschap Noorderzijlvest, toezichthouder als bedoeld in artikel 5:11 van de Algemene wet bestuursrecht en belast met toezicht op de naleving van diverse wet- en regelgeving op het gebied van water, milieu en natuur${state.wetgeving.trim() ? ', waaronder de ' + esc(state.wetgeving.trim()) : ''}, verklaar het navolgende:</p>
 
       <div class="sec-title">Aanleiding</div>
       <p>${nl2br(state.aanleiding)}</p>
@@ -634,7 +658,7 @@ function bindText(id, field){
   ['naam','naam'],['functie','functie'],['datumBezoek','datumBezoek'],['tijdBezoek','tijdBezoek'],
   ['locatie','locatie'],['aanleiding','aanleiding'],['situatieCaption','situatieCaption'],
   ['gesprek','gesprek'],['opgemaaktDoor','opgemaaktDoor'],['plaats','plaats'],
-  ['datumOndertekening','datumOndertekening'],['functieOnder','functieOnder']
+  ['datumOndertekening','datumOndertekening'],['functieOnder','functieOnder'],['wetgeving','wetgeving']
 ].forEach(([id,field])=>bindText(id,field));
 
 document.getElementById('situatieInput').addEventListener('change', e=>{
@@ -723,6 +747,7 @@ function nieuwRapport(){
   });
   document.getElementById('situatieInput').value='';
   zetGeenGesprek(state.rapportType === 'monster');
+  zetPickers();
 
   renderAanwezigen();
   renderSimpleList('bevindingen','bevindingenList','Beschrijf de bevinding');
@@ -753,6 +778,45 @@ function nieuwRapport(){
     nieuwRapport();
   });
 })();
+
+// ---------- datum- en tijdkiezers ----------
+function isoVandaag(){ return new Date().toLocaleDateString('sv-SE'); }  // YYYY-MM-DD, lokale tijd
+function datumUitIso(iso){
+  const [y,m,d] = iso.split('-').map(Number);
+  return new Date(y, m-1, d).toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'});
+}
+function zetTekst(id, field, waarde){
+  state[field] = waarde;
+  document.getElementById(id).value = waarde;
+  renderPreview();
+}
+function koppelDatum(pickId, vandaagId, tekstId, field){
+  const pick = document.getElementById(pickId);
+  pick.addEventListener('change', ()=>{ if(pick.value) zetTekst(tekstId, field, datumUitIso(pick.value)); });
+  document.getElementById(vandaagId).addEventListener('click', ()=>{
+    pick.value = isoVandaag(); zetTekst(tekstId, field, datumUitIso(pick.value));
+  });
+}
+koppelDatum('datumBezoekPick','datumBezoekVandaag','datumBezoek','datumBezoek');
+koppelDatum('datumOndertekeningPick','datumOndertekeningVandaag','datumOndertekening','datumOndertekening');
+
+function tijdTekst(t){ return t.replace(':','.'); }
+function updateTijd(){
+  const tijd = document.getElementById('tijdVan').value;
+  if(!tijd) return;
+  zetTekst('tijdBezoek','tijdBezoek', `${tijdTekst(tijd)} uur`);
+}
+document.getElementById('tijdVan').addEventListener('change', updateTijd);
+document.getElementById('tijdNu').addEventListener('click', ()=>{
+  const nu = new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit',hour12:false});
+  document.getElementById('tijdVan').value = nu;
+  updateTijd();
+});
+function zetPickers(){
+  document.getElementById('datumBezoekPick').value = isoVandaag();
+  document.getElementById('datumOndertekeningPick').value = isoVandaag();
+  document.getElementById('tijdVan').value = '';
+}
 
 // gesprek aan/uit
 function zetGeenGesprek(aan){
